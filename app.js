@@ -4,6 +4,7 @@ const path = require("path");
 const { open } = require("sqlite");
 const sqlite3 = require("sqlite3");
 const app = express();
+app.use(express.json());
 module.exports = app;
 
 const dbPath = path.join(__dirname, "todoApplication.db");
@@ -86,7 +87,6 @@ app.get("/todos/", async (request, response) => {
    WHERE
     todo LIKE '%${search_q}%';`;
   }
-
   data = await db.all(getTodoQuery);
   response.send(data);
 });
@@ -109,13 +109,14 @@ app.get("/todos/:todoId/", async (request, response) => {
 app.post("/todos/", async (request, response) => {
   const todoDetails = request.body;
 
-  const { todo, priority, status } = todoDetails;
+  const { id, todo, priority, status } = todoDetails;
 
   const addTodoQuery = `
     INSERT INTO
-      todo (todo,priority,status)
+      todo (id, todo,priority,status)
     VALUES
       (
+       ${id},
       '${todo}',
        '${priority}',
        '${status}'
@@ -131,7 +132,6 @@ app.put("/todos/:todoId/", async (request, response) => {
   const { todoId } = request.params;
   const todoDetails = request.body;
   //console.log(todoDetails);
-  let updateColumn = "";
   switch (true) {
     case todoDetails.status !== undefined:
       updateTodoQuery = `
@@ -140,9 +140,9 @@ app.put("/todos/:todoId/", async (request, response) => {
       SET
       status="DONE"
       WHERE 
-      id={todoId};`;
-      await db.run(updateTodoQuery);
+      id=${todoId};`;
       response.send("Status Updated");
+      await db.run(updateTodoQuery);
       break;
     case todoDetails.priority !== undefined:
       updateTodoQuery = `
@@ -152,9 +152,8 @@ app.put("/todos/:todoId/", async (request, response) => {
       priority="HIGH"
       WHERE 
       id=${todoId};`;
-      await db.run(updateTodoQuery);
       response.send("Priority Updated");
-
+      await db.run(updateTodoQuery);
       break;
     case todoDetails.todo !== undefined:
       updateTodoQuery = `
@@ -164,9 +163,8 @@ app.put("/todos/:todoId/", async (request, response) => {
       todo="Some task"
       WHERE 
       id=${todoId};`;
-      await db.run(updateTodoQuery);
       response.send("Todo Updated");
-
+      await db.run(updateTodoQuery);
       break;
   }
 });
